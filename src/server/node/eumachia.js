@@ -4,6 +4,7 @@ import cors from 'cors';
 import identity from './src/identity/identity.js';
 import invoices from './src/invoices/invoices.js';
 import payments from './src/payments/payments.js';
+import { reportPurchase } from './src/pool/report.js';
 
 const app = express();
 app.use(cors());
@@ -357,6 +358,8 @@ app.post('/pay/:uuid/complete', async (req, res) => {
         const payout = await payments.payOutCreator(uuid);
         if (payout?.state !== 'sent') {
           console.error(`Payout did not send for invoice ${uuid}:`, payout);
+        } else {
+          reportPurchase(uuid, invoice).catch((err) => console.warn(`pool not told about ${uuid}:`, err.message));
         }
       } catch (err) {
         // The invoice is still correctly marked paid even if the payout
@@ -413,6 +416,9 @@ app.post('/pay/:uuid/payout', async (req, res) => {
     }
 
     const payout = await payments.payOutCreator(uuid);
+    if (payout?.state === 'sent') {
+      reportPurchase(uuid, invoice).catch((err) => console.warn(`pool not told about ${uuid}:`, err.message));
+    }
     res.json({ payout });
   } catch (err) {
     console.error('Error retrying payout:', err);

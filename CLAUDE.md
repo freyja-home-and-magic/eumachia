@@ -161,6 +161,23 @@ serving a certificate for an unrelated domain, so every request to them died
 with `ERR_TLS_CERT_ALTNAME_INVALID` — silently, since the route's catch turned
 it into "Something went wrong loading this invoice".
 
+## Paid invoices earn the payment pool (October 2026)
+
+When an invoice's payout is sent (from `/complete` or a `/payout` retry),
+`src/pool/report.js` tells savage's payment pool, so the person who sent
+the invoice earns a nineum (savage/CLAUDE.md, "The payment pool"). Only
+then: `/complete` alone trusts the payer's browser, and `payOutCreator` is
+where Stripe confirms the charge succeeded, so reporting earlier would let
+anyone mint by "completing" their own invoice. savage counts each invoice
+once.
+
+The invoice names its sender's HomeFront identity as `creatorFountPubKey`
+(GetPayed writes it). Settings: `POOL_URL` (savage, e.g.
+`http://127.0.0.1:3012/`), `POOL_REPORTER_PRIVATE_KEY` and
+`POOL_REPORTER_PUBLIC_KEY` (a keypair of its own, not the payment identity,
+which can be re-minted; the public key goes in savage's `POOL_REPORTERS`).
+Any unset, nothing is reported.
+
 ## History
 
 eumachia lived at `allyabase/deployment/eumachia/` and was deployed inside the
